@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
@@ -24,6 +25,8 @@ import org.eclipse.jgit.transport.OpenSshConfig;
 import org.eclipse.jgit.transport.OpenSshConfig.Host;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jgit.transport.SshTransport;
+import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
@@ -117,34 +120,42 @@ public class GitDb
         this.privateKey = privateKey;
         this.sshFetchUrl = src;
 
-		try {
-			SshSessionFactory factory = new JschConfigSessionFactory() {
-				@Override
-				public void configure(Host hc, com.jcraft.jsch.Session session) {
-                    // FIXME: Possibly consider manually adding SSH key,
-                    // to avoid MITM attacks
-                    session.setConfig("StrictHostKeyChecking", "no");
-				}
+        final SshSessionFactory factory = new JschConfigSessionFactory() {
+			@Override
+			public void configure(Host hc, com.jcraft.jsch.Session session) {
+                // FIXME: Possibly consider manually adding SSH key,
+                // to avoid MITM attacks
+                session.setConfig("StrictHostKeyChecking", "no");
+			}
 
-                @Override
-                protected JSch getJSch(final OpenSshConfig.Host hc,
-                        org.eclipse.jgit.util.FS fs) throws JSchException {
-                    JSch jsch = super.getJSch(hc, fs);
-                    jsch.removeAllIdentity();
+            @Override
+            protected JSch getJSch(final OpenSshConfig.Host hc,
+                    org.eclipse.jgit.util.FS fs) throws JSchException {
+                JSch jsch = super.getJSch(hc, fs);
+                jsch.removeAllIdentity();
 
-                    if (null != privateKey) {
-                        jsch.addIdentity(privateKey);
-                    }
-
-                    return jsch;
+                if (null != privateKey) {
+                    jsch.addIdentity(privateKey);
                 }
-            };
 
-            if (src != null)
-                SshSessionFactory.setInstance(factory);
-
+                return jsch;
+            }
+        };
+        
+        TransportConfigCallback setKeyCallback = new TransportConfigCallback() {
+			@Override
+			public void configure(Transport transport) {
+				if (transport instanceof SshTransport) {
+					SshTransport sshTransport = (SshTransport)transport;
+					sshTransport.setSshSessionFactory(factory);
+				}
+			}
+		};
+        
+		try {
             log.info("Cloning " + src + " to " + dest);
             this.gitHandle =  Git.cloneRepository()
+            	.setTransportConfigCallback(setKeyCallback)
                 .setURI(src)
                 .setDirectory(dest)
                 .setBare(bare)
