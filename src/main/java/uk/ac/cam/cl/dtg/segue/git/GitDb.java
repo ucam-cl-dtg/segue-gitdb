@@ -510,6 +510,29 @@ public class GitDb
 	}
 
     /**
+     * Resolves a name (such as HEAD or a branch name like master) to a SHA.
+     *
+     * @param name The name to resolve.
+     * @return String of sha id
+     */
+    public String getSha(String name)
+    {
+        ObjectId commit = null;
+        try
+        {
+            commit = gitHandle.getRepository().resolve(name);
+        } catch (IOException e)
+        {
+            log.error("Unable to resolve name " + name, e);
+        }
+
+        if (null == commit)
+            return null;
+
+        return commit.getName();
+    }
+
+    /**
      * Pushes the current GitDb back to the given repository.
      *
      * @param remote The remote (uri or name) used for the push operation.
