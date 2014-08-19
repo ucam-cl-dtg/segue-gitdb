@@ -606,4 +606,54 @@ public class GitDb
 				+ " Searching for: " + filename + " found: " + path);
 		return objectId;
 	}
+	
+	/**
+	 * This is here because this class is a mess anyway and I don't know where else to put it
+	 * 
+	 * @param src
+	 * @param dest
+	 * @param bare
+	 * @param branch
+	 * @param remote
+	 * @param privateKeyBytes
+	 * @throws IOException
+	 * @throws InvalidRemoteException
+	 * @throws TransportException
+	 * @throws GitAPIException
+	 */
+	public static void clone(String src, File dest, boolean bare,
+			String branch, String remote, final String privateKeyBytes)
+			throws IOException, InvalidRemoteException, TransportException,
+			GitAPIException {
+		final SshSessionFactory factory = new JschConfigSessionFactory() {
+			@Override
+			public void configure(Host hc, com.jcraft.jsch.Session session) {
+				session.setConfig("StrictHostKeyChecking", "no");
+			}
+
+			@Override
+			protected JSch getJSch(final OpenSshConfig.Host hc,
+					org.eclipse.jgit.util.FS fs) throws JSchException {
+				JSch jsch = super.getJSch(hc, fs);
+				jsch.removeAllIdentity();
+				jsch.addIdentity("provided-key", privateKeyBytes.getBytes(),
+						null, null);
+				return jsch;
+			}
+		};
+
+		TransportConfigCallback setKeyCallback = new TransportConfigCallback() {
+			@Override
+			public void configure(Transport transport) {
+				if (transport instanceof SshTransport) {
+					SshTransport sshTransport = (SshTransport) transport;
+					sshTransport.setSshSessionFactory(factory);
+				}
+			}
+		};
+
+		Git.cloneRepository().setTransportConfigCallback(setKeyCallback)
+				.setURI(src).setDirectory(dest).setBare(bare).setBranch(branch)
+				.setRemote(remote).call();
+	}
 }
