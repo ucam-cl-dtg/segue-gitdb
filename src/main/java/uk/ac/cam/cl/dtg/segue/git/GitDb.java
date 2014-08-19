@@ -10,7 +10,9 @@ import org.apache.commons.lang3.Validate;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -114,8 +116,11 @@ public class GitDb
      * @param dest Destination directory
      * @param bare Clone bare?
      * @param branch Branch to clone
+     * @throws GitAPIException 
+     * @throws TransportException 
+     * @throws InvalidRemoteException 
      */
-    public GitDb(String src, File dest, boolean bare, String branch, String remote, final String privateKey) throws IOException
+    public GitDb(String src, File dest, boolean bare, String branch, String remote, final String privateKey) throws IOException, InvalidRemoteException, TransportException, GitAPIException
     {
         this.privateKey = privateKey;
         this.sshFetchUrl = src;
@@ -152,26 +157,16 @@ public class GitDb
 			}
 		};
         
-		try {
-            log.info("Cloning " + src + " to " + dest);
-            this.gitHandle =  Git.cloneRepository()
-            	.setTransportConfigCallback(setKeyCallback)
-                .setURI(src)
-                .setDirectory(dest)
-                .setBare(bare)
-                .setBranch(branch)
-                .setRemote(remote)
-                .call();
-            this.gitHandle = Git.open(dest);
-
-        } catch (GitAPIException e) {
-            log.error(
-                    "Error while trying to clone the repository.",
-                    e);
-            throw new RuntimeException(
-                    "Error while trying to clone the repository.",
-                    e);
-        }
+        log.info("Cloning " + src + " to " + dest);
+        this.gitHandle =  Git.cloneRepository()
+        	.setTransportConfigCallback(setKeyCallback)
+            .setURI(src)
+            .setDirectory(dest)
+            .setBare(bare)
+            .setBranch(branch)
+            .setRemote(remote)
+            .call();
+        this.gitHandle = Git.open(dest);
     }
 
     /**

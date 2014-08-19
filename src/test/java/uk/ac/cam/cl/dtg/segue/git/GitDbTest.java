@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.InvalidRemoteException;
+import org.eclipse.jgit.api.errors.TransportException;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,7 +26,7 @@ public class GitDbTest {
 	}
 
 	@Test
-	public void cloneRemote() throws IOException {
+	public void cloneRemote() throws IOException, InvalidRemoteException, TransportException, GitAPIException {
 		String[] privateKey = new String[] {
 				"-----BEGIN DSA PRIVATE KEY-----", //
 				"MIIBvAIBAAKBgQDpPLa6DQgSfaJLvkfo97MYgLuDIGhk2IL/XATlSSscX79p0V82", //
