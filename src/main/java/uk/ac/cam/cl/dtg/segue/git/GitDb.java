@@ -116,6 +116,7 @@ public class GitDb
      * @param dest Destination directory
      * @param bare Clone bare?
      * @param branch Branch to clone
+     * @param privateKey filename of private key file
      * @throws GitAPIException 
      * @throws TransportException 
      * @throws InvalidRemoteException 
@@ -194,9 +195,9 @@ public class GitDb
 	 * will attempt to locate a unique file and return a bytearrayoutputstream
 	 * of the files contents.
 	 *
-	 * @param SHA
+	 * @param sha
 	 *            to search in.
-	 * @param Full
+	 * @param fullFilePath
 	 *            file path to search for e.g. /src/filename.json
 	 * @return the ByteArrayOutputStream - which you can extract the file
 	 *         contents via the toString method.
